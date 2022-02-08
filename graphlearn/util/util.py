@@ -2,7 +2,7 @@ from collections import defaultdict
 import functools
 import networkx as nx
 from graphlearn import local_substitution_graph_grammar
-
+from graphlearn.lsgg_core_interface_pair import CoreInterfacePair
 
 
 
@@ -79,7 +79,7 @@ def get_cyclegraphs():
     g3.add_edge(4,3)
     g3.add_edge(4,2)
     g3.add_edge(4,1)
-    
+
     G = [g1,g2,g3]
     G = list(map(_edenize_for_testing,G))
     G.append(test_get_circular_graph())
@@ -130,7 +130,7 @@ def draw_grammar_term(grammarobject,
 
     print (str(grammarobject)+ "          | cores are cyan")
 
-    grammar = grammarobject.productions
+    grammar: dict[int, dict[int, CoreInterfacePair]] = grammarobject.productions
     if n_productions is None or len(grammar) < n_productions:
         n_productions = len(grammar)
 
@@ -148,8 +148,8 @@ def draw_grammar_term(grammarobject,
         # list(map(decorate_cip, cips)) see color argument
 
         most_frequent_cips = sorted([(cip.count, cip) for cip in cips], reverse=True, key=lambda x:x[0])
-        graphs = [cip.cip_graph for count, cip in most_frequent_cips]
-        color = [(cip.interface_nodes,cip.core_nodes) for count, cip in most_frequent_cips]
+        graphs = [cip.graph for count, cip in most_frequent_cips]
+        color = [(cip.interface.nodes(),cip.core_nodes) for count, cip in most_frequent_cips]
         # graphs =[cip.abstract_view for count, cip in most_frequent_cips]
 
 
