@@ -1,3 +1,4 @@
+import copy
 import eden.graph as eg
 from networkx.algorithms import isomorphism as iso
 import networkx as nx
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 def _add_hlabel(graph):
     eg._label_preprocessing(graph)
 
-def _edge_to_vertex(graph):
+def _edge_to_vertex(graph: nx.Graph) -> nx.Graph:
     return eg._edge_to_vertex_transform(graph)
 
 
@@ -39,7 +40,10 @@ def _graph_hash_neighborhood(graph, node, get_node_label=lambda id, node: node['
     return hash(tuple(l))
 
 
-
+def interface_hash(interface):
+    def get_node_label(id, node): return node['ilabel']
+    interface_hash = graph_hash(interface, get_node_label=get_node_label)
+    return interface_hash
 
 
 
@@ -52,7 +56,7 @@ class CoreInterfacePair:
     this is referred to throughout the code as cip
     it contains the cip-graph and several pieces of information about it.
 
-    
+
     PARAMS:
     core: an 'expanded' subgraph of graph
     graph: an unexpanded graph
@@ -64,17 +68,17 @@ class CoreInterfacePair:
     core_hash: hash of the core, used for filtering duplicates
     core_nodes: list of node-ids in the core
     interface: interface graph, augmented with a distance_dependant_label
-        this label ensures that the correct isomorphism is found when 
+        this label ensures that the correct isomorphism is found when
         substituting
     interface_hash: finding congruent cips
     count: when this cip is placed in a grammar, we will count the number of
         occurences
-    
+
     """
 
 
     def __init__(self,core,graph,thickness):
-                     
+
             # preprocess, distances of core neighborhood, init counter
             exgraph, dist = self.initialize_params(core,graph, thickness)
 
@@ -98,12 +102,7 @@ class CoreInterfacePair:
 
                 interface.nodes[no]['ilabel'] += 1337
 
-        return interface, self.interface_hash(interface)
-
-    def interface_hash(self,interface):
-        get_node_label = lambda id, node: node['ilabel']
-        interface_hash = graph_hash(interface, get_node_label=get_node_label)
-        return interface_hash
+        return interface, interface_hash(interface)
 
 
     def initialize_params(self, core, graph, thickness):
@@ -115,17 +114,26 @@ class CoreInterfacePair:
         self.count=0
         return exgraph, dist
 
+    def copy_extend_core(self, new_core_nodes):
+        new_cip = copy.copy(self)
+        new_core_nodes_set = set(new_core_nodes)
+        new_cip.core_nodes = new_cip.core_nodes + list(new_core_nodes)
+        new_cip.core_hash = graph_hash(new_cip.graph.subgraph(new_cip.core_nodes))
+        new_cip.interface = new_cip.interface.subgraph(
+            {v for v in new_cip.interface.nodes() if v not in new_core_nodes_set})
+        new_cip.interface_hash = interface_hash(new_cip.interface)
 
+        return new_cip
 
-    def ascii(self): 
+    def ascii(self):
         '''return colored cip-graph'''
-        import structout as so 
+        import structout as so
         return so.graph.make_picture(self.graph, color=[ self.core_nodes , list(self.interface.nodes())  ])
 
     def __str__(self):
         return 'cip: int:%d, cor:%d, size:%d' % \
-               (self.interface_hash, 
-                       self.core_hash, 
+               (self.interface_hash,
+                       self.core_hash,
                        len(self.core_nodes))
 
 #########
@@ -136,7 +144,7 @@ def get_cores(graph, radii):
     for root in graph.nodes():
         id_dst = {node: dis for (node, dis) in short_paths(exgraph, [root], max(radii)+1)}
         for e in loopradii_makesubgraphs(exgraph, id_dst, radii):
-            yield e 
+            yield e
 
 
 def loopradii_makesubgraphs(exgraph, id_dst, radii):
@@ -150,11 +158,11 @@ def loopradii_makesubgraphs(exgraph, id_dst, radii):
 
 def get_node_set(id_dst, r, graph):
     # a node is in the core when dist <= r or it is an edge and is twice connected to nodes in core
-    border = {node for node,dis in id_dst.items() if dis == r} 
+    border = {node for node,dis in id_dst.items() if dis == r}
     return [id for id,dst in id_dst.items() if (dst <= r or edgetest(border,id, graph))]
 
 def edgetest(border, id,g):
-   res=  (2 == sum([ g.has_edge( id,b  ) for b in border]))# and "edge" in graph.nodes[id] 
+   res=  (2 == sum([ g.has_edge( id,b  ) for b in border]))# and "edge" in graph.nodes[id]
    return res
 
 
@@ -163,7 +171,7 @@ def get_cores_closeloop(graph, radii):
     for e in get_cores(graph,radii):
         yield e
     deadends  =  [node for  node, deg in graph.degree() if deg == 1]
-    if len(deadends) > 1: 
+    if len(deadends) > 1:
         exgraph = _edge_to_vertex(graph)
         for i, nid in enumerate(deadends):
             for j, njd in enumerate(deadends[i:]):
@@ -183,7 +191,7 @@ def find_all_isomorphisms(interface_graph, congruent_interface_graph):
 
 
 def substitute_core(graph, cip, congruent_cip):
-    
+
     # expand edges and remove old core
     graph = _edge_to_vertex(graph)
     graph.remove_nodes_from(cip.core_nodes)
@@ -195,12 +203,12 @@ def substitute_core(graph, cip, congruent_cip):
     if len(interface_map) != len(cip.interface):
         logger.log(10, "isomorphism failed, likely due to hash collision")
         return None
-    
-    maxid = max(graph.nodes()) # if we die here, likely the cip covers the whole graph 
+
+    maxid = max(graph.nodes()) # if we die here, likely the cip covers the whole graph
     core_rename= { c: i+maxid+1 for i,c in enumerate(congruent_cip.core_nodes) }
     interface_map.update(core_rename)
     newcip = nx.relabel_nodes(congruent_cip.graph, interface_map,copy=True)
-    
+
 
     # compose and undo edge expansion
     graph2= nx.compose(graph,newcip)
@@ -213,8 +221,8 @@ def substitute_core(graph, cip, congruent_cip):
     except Exception as e:
         print(str(e))
         print('imap:', interface_map)
-        print(newcip.nodes()) 
-        print(graph.nodes()) 
+        print(newcip.nodes())
+        print(graph.nodes())
 
         ZOOM2  = [a for (a, b) in short_paths(graph2, interface_map.values(), 5)]
         print("substituted")
