@@ -18,7 +18,8 @@ class LocalSubstitutionGraphGrammarCore(object):
                  filter_min_cip=2,
                  filter_min_interface=2,
                  filter_max_num_substitutions=None,
-                 nodelevel_radius_and_thickness=True
+                 nodelevel_radius_and_thickness=True,
+                 combine_cips=False
                  ):
         """Parameters
         ----------
@@ -33,6 +34,7 @@ class LocalSubstitutionGraphGrammarCore(object):
         self.filter_min_cip = filter_min_cip
         self.filter_min_interface = filter_min_interface
         self.filter_max_num_substitutions = filter_max_num_substitutions
+        self.combine_cips = combine_cips
 
         self.productions = defaultdict(dict)
         if nodelevel_radius_and_thickness:
@@ -62,10 +64,21 @@ class LocalSubstitutionGraphGrammarCore(object):
             self._store_cip(cip)
 
     def _get_cips(self, graph):
+        base_cips = []
+        combined_cips = []
+
         for core in self._get_cores(graph):
             x = self._get_cip(core=core, graph=graph)
             if x:
-                yield x
+                if self.combine_cips:
+                    for y in base_cips:
+                        xy = lsgg_core_interface_pair.combine_cips(x, y)
+                        if xy:
+                            combined_cips.append(xy)
+
+                base_cips.append(x)
+
+        return base_cips + combined_cips
 
     def _get_cip(self, core=None, graph=None):
         return lsgg_core_interface_pair.CoreInterfacePair(
