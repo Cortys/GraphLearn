@@ -187,35 +187,34 @@ def get_cores_closeloop(graph, radii):
 ######
 
 class CipMatcher(iso.GraphMatcher):
-  def __init__(self, G1, G2, core1_nodes, core2_nodes):
-    super().__init__(G1, G2)
-    self.core1_nodes = set(core1_nodes)
-    self.core2_nodes = set(core2_nodes)
+    def __init__(self, G1, G2, core1_nodes, core2_nodes):
+        super().__init__(G1, G2)
+        self.core1_nodes = set(core1_nodes)
+        self.core2_nodes = set(core2_nodes)
 
-  def semantic_feasibility(self, G1_node, G2_node):
-    if G2_node in self.core2_nodes:
-      return G1_node in self.core1_nodes
-    else:
-      return G1_node not in self.core1_nodes
+    def semantic_feasibility(self, G1_node, G2_node):
+        if G2_node in self.core2_nodes:
+            return G1_node in self.core1_nodes
+        else:
+            return G1_node not in self.core1_nodes
 
 def combine_cips(cip1: CoreInterfacePair, cip2: CoreInterfacePair) -> Optional[CoreInterfacePair]:
-  cip1_size = cip1.graph.order()
-  cip2_size = cip2.graph.order()
+    cip1_size = cip1.graph.order()
+    cip2_size = cip2.graph.order()
 
-  if cip1_size == cip2_size:
-    return
+    if cip1_size == cip2_size:
+        return
 
-  sub_cip, cip = (cip1, cip2) if cip1_size < cip2_size else (cip2, cip1)
-  matcher = CipMatcher(cip.graph, sub_cip.graph,
-                       cip.core_nodes, sub_cip.core_nodes)
-  try:
-    iso_map = next(matcher.subgraph_isomorphisms_iter())
-    matched_ids = set(iso_map.keys())
-    new_core = {v for v in cip.interface.nodes() if v not in matched_ids}
-    return cip.copy_extend_core(new_core)
-
-  except StopIteration as e:
-    return None
+    sub_cip, cip = (cip1, cip2) if cip1_size < cip2_size else (cip2, cip1)
+    matcher = CipMatcher(cip.graph, sub_cip.graph,
+                         cip.core_nodes, sub_cip.core_nodes)
+    try:
+        iso_map = next(matcher.subgraph_isomorphisms_iter())
+        matched_ids = set(iso_map.keys())
+        new_core = {v for v in cip.interface.nodes() if v not in matched_ids}
+        return cip.copy_extend_core(new_core)
+    except StopIteration as e:
+        return None
 
 
 def find_all_isomorphisms(interface_graph, congruent_interface_graph):

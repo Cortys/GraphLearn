@@ -17,7 +17,7 @@ num_graphs=200 #limit number of graphs read by data sources
 num_graphs_neg=200'''
 
 
-# I excluded these so defaults will be used :) 
+# I excluded these so defaults will be used :)
 #graphtransformer=transform.GraphTransformer(),
 #feasibility_checker=feasibility.FeasibilityChecker(),
 #decomposergen=decompose.Decomposer,
@@ -29,19 +29,19 @@ parser=makeparser.makeparser(text)
 
 
 if __name__ == "__main__":
-        
+
     # do argparse things:
     args=vars(parser.parse_args())
 
     import os.path
     if not os.path.isfile(args['input']):
         parser.print_usage()
-        print 'at least provide a path to input'
+        print('at least provide a path to input')
         exit()
 
-    print "*raw args"
-    print "*"*80
-    print args
+    print("*raw args")
+    print("*"*80)
+    print(args)
 
 
     # verbosity
@@ -57,12 +57,12 @@ if __name__ == "__main__":
 
     # estimator, if the user is providing a negative graph set, we use
     # the twoclass esti OO
-    import graphlearn01.estimate as estimate
+    import graphlearn.score as score
     if args['negative_input']==None:
-        args['estimator']=estimate.OneClassEstimator(nu=.5, cv=2, n_jobs=-1)
+        args['scorer']=score.OneClassEstimator(n_jobs=-1)
     else:
-        args['estimator']=estimate.TwoClassEstimator( cv=2, n_jobs=-1)
-        
+        args['scorer']=score.TwoClassEstimator(n_jobs=-1)
+
     #args for fitting:
     from eden.io.gspan import gspan_to_eden
     from itertools import islice
@@ -79,15 +79,15 @@ if __name__ == "__main__":
     #output
     OUTFILE=args.pop('output')
 
-    print "*Sampler init"
-    print "*"*80
-    print args
+    print("*Sampler init")
+    print("*"*80)
+    print(args)
 
-    # CREATE SAMPLER, dumping the rest of the parsed args :) 
-    from graphlearn01.graphlearn import Sampler
+    # CREATE SAMPLER, dumping the rest of the parsed args :)
+    from graphlearn.sample import Sampler
     s=Sampler(**args)
-    print "*fit"
-    print "*"*80
-    print fitargs
+    print("*fit")
+    print("*"*80)
+    print(fitargs)
     s.fit(**fitargs)
     s.save(OUTFILE)

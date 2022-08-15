@@ -40,12 +40,12 @@ if __name__ == "__main__":
     import os.path
     if not os.path.isfile(args['start_graphs']):
         parser.print_usage()
-        print 'at least provide a path to input'
+        print('at least provide a path to input')
         exit()
 
-    print "*raw args"
-    print "*" * 80
-    print args
+    print("*raw args")
+    print("*" * 80)
+    print(args)
 
     # verbosity
     from eden.util import configure_logging
@@ -64,13 +64,13 @@ if __name__ == "__main__":
     MODEL=args.pop('model')
 
     # CREATE SAMPLER
-    from graphlearn01.graphlearn import Sampler
+    from graphlearn.sample import Sampler
     s=Sampler()
     s.load(MODEL)
     results=s.transform(**args)
 
 
-    import graphlearn01.utils.draw_openbabel as ob
+    import graphlearn.utils.draw_openbabel as ob
 
     for i,samplepath in enumerate(results):
         for j,graph in enumerate(samplepath):
